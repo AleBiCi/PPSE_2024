@@ -24,8 +24,7 @@ public:
 	double get_current();
 	
 	/* point to sun automatically */
-	void auto_positioning(tm* time_info_ptr, double Lat, double Lon, double Alt, double* Az, double* El);
+	void auto_positioning(tm* time_info_ptr, double Lat, double Lon, double Alt, double compass_val, double* Az, double* El);
 };
 
 #endif
-
