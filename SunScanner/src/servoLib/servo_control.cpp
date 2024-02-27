@@ -1,4 +1,4 @@
-#include "servo_control.h"
+#include "servoLib/servo_control.h"
 
 ServoController::ServoController(int pin_az, int pin_el, int current_p, int voltage_p):
 	servoAz(360,pin_az),

@@ -1,4 +1,4 @@
-#include "servo.h"
+#include "servoLib/servo.h"
 
 /* In order to make everything work, after creating a servo, set_pins() must be called */
 Servo::Servo(int max_ag, int p){

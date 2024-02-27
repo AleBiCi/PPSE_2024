@@ -1,4 +1,4 @@
-#include "Sun_az_alt.h"
+#include "servoLib/Sun_az_alt.h"
 
 void SolarAzEl(tm* time_info_ptr, double Lat, double Lon, double Alt, double* Az, double* El) {
 	time_t utc_time_point = mktime(time_info_ptr);

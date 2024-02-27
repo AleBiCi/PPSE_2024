@@ -1,4 +1,4 @@
-#include "menu.h"
+#include "oled/menu.h"
 
 extern const unsigned char bitmap_specs [] PROGMEM;
 extern const unsigned char bitmap_GPS [] PROGMEM;

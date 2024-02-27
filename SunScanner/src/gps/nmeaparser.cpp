@@ -3,7 +3,7 @@
 #include <sstream> // for stringstream
 #include <time.h>
 #include <iostream>
-#include "NMEAParser.h"
+#include "gps/NMEAParser.h"
 #include <math.h>
 
 bool validateChecksum(std::string mess_s, std::string& check_s) {
