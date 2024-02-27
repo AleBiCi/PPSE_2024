@@ -16,6 +16,7 @@
 #define PIN_SERVO_EL 8
 
 #define PIN_VOLTAGE 29
+#define BUCK_EN 11 // Pin da pullappare per attivare il circuito di alimentazione 12V->5V 
 
 #define UART1_RX 5
 #define UART1_TX 4
@@ -323,6 +324,9 @@ void btn_right_pressed(void){
 
 void setup() {
   // put your setup code here, to run once:
+  pinMode(BUCK_EN, OUTPUT);
+  digitalWrite(BUCK_EN, HIGH);
+
   Serial.begin(9600);
 
   Wire.setSDA(0);
