@@ -1,6 +1,7 @@
 #include "servoLib/servo_control.h"
 #include "oled/menu.h"
 #include "gps/NMEAParser.h"
+#include "led/led.h"
 #include <Arduino.h>
 #include <QMC5883LCompass.h>
 #include <string>
@@ -164,7 +165,7 @@ void fn_ACTIONS(){
 
 void fn_POSITIONING(void){
   message.time.tm_isdst = false;
-  compass.read();
+  //compass.read();
   servo_controller.auto_positioning(&(message.time),message.latitude,message.longitude,400,compass.getAzimuth(),&az_val,&el_val);
   
   current_state = STATE_FINE_POINTING;
@@ -267,9 +268,13 @@ void fn_GPS_ACQUIRE(void) {
         }
         else
         {
+          
           sent.assign(buffer_uart1, strlen(buffer_uart1));
           if (parseRMC(sent, message))
           { // GPS non fixato
+            setAllLedRed();
+            delay(100);
+            setLedOff();
             Serial.print(sent.data());
             Serial.println("ITER");
             Serial.println(iter);
@@ -277,6 +282,9 @@ void fn_GPS_ACQUIRE(void) {
           }
           else
           { // GPS fixato
+            setAllLedGreen();
+            delay(100);
+            setLedOff();
             Serial.print(sent.data());
             Serial.println("ITER FIXED");
             Serial.println(iterFixed);
@@ -287,6 +295,9 @@ void fn_GPS_ACQUIRE(void) {
       }
     }
   }
+  
+  circleCompleteLoopLed();
+
   Serial.print(message.latitude);
   Serial.println();
   Serial.print(message.longitude);
