@@ -48,7 +48,7 @@ bool parseRMC(std::string& line, MessageRMC& mess) {
     std::string checksum_s;
 
     // Sample GNRMC sentence for debugging
-    line.assign("$GNRMC,140212.00,A,4604.18179,N,01108.18041,E,0.234,,210224,,,A*69\n");
+    // line.assign("$GNRMC,140212.00,A,4604.18179,N,01108.18041,E,0.234,,210224,,,A*69\n");
 
     // Creates input string stream from which to gather values of each field
     std::istringstream inputStr(line);

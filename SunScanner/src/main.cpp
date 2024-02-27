@@ -250,11 +250,13 @@ void fn_WAIT_BACK(void){
 }
 
 void fn_GPS_ACQUIRE(void) {
-  int iter = 0;
+  int iterNotFixed = 0;
   int iterFixed = 0;
+  int totIter = 0;
+  int ledIter = 0;
   bool flag = false;
 
-  while(iterFixed < 10 && iter < 20) {
+  while(iterFixed < 10 && iterNotFixed < 20) {
     if (Serial2.available())
     {
       read_char = Serial2.read();
@@ -268,35 +270,29 @@ void fn_GPS_ACQUIRE(void) {
         }
         else
         {
-          
-          sent.assign(buffer_uart1, strlen(buffer_uart1));
+          sent.assign(buffer_uart1, strlen(buffer_uart1));          
           if (parseRMC(sent, message))
           { // GPS non fixato
-            setAllLedRed();
-            delay(100);
-            setLedOff();
+            singleLedIfFixed(false, totIter);
             Serial.print(sent.data());
             Serial.println("ITER");
-            Serial.println(iter);
-            iter++;
+            Serial.println(iterNotFixed);
+            iterNotFixed++;
           }
           else
           { // GPS fixato
-            setAllLedGreen();
-            delay(100);
-            setLedOff();
+            singleLedIfFixed(true, totIter);
             Serial.print(sent.data());
             Serial.println("ITER FIXED");
             Serial.println(iterFixed);
             iterFixed++;
           }
+          totIter++;
           strcpy(buffer_uart1, "");
         }
       }
     }
   }
-  
-  circleCompleteLoopLed();
 
   Serial.print(message.latitude);
   Serial.println();
@@ -314,6 +310,7 @@ void fn_GPS_ACQUIRE(void) {
   Serial.println();
   Serial.print(message.time.tm_year);
   Serial.println();
+
   if(iterFixed >= 10) {
     current_state=STATE_POSITIONING;
   } else current_state=STATE_WAIT_AUTO;

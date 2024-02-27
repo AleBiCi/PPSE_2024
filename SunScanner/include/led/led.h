@@ -17,4 +17,6 @@ void circleCompleteLoopLed();
 
 void circleSerialLed();
 
+void singleLedIfFixed(bool fixed, int num_iter);
+
 #endif

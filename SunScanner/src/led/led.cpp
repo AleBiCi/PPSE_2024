@@ -35,3 +35,16 @@ void circleSerialLed(){
     }
     p.neoPixelClear(true);
 }
+
+void singleLedIfFixed(bool fixed, int num_iter) {
+    num_iter%=NUM_LED;
+    if(fixed) {
+        p.neoPixelSetValue(num_iter, 0, 255, 0, true);
+        delay(100);
+        p.neoPixelClear(true);
+    } else {
+        p.neoPixelSetValue(num_iter, 255, 0, 0, true);
+        delay(100);
+        p.neoPixelClear(true);
+    }
+}
