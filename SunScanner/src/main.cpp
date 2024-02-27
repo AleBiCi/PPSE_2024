@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <QMC5883LCompass.h>
 #include <string>
+#include <Adafruit_NeoPixel.h>
 
 #define BTN_UP 22
 #define BTN_DOWN 23
