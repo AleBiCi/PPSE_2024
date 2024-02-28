@@ -318,18 +318,18 @@ void fn_GPS_ACQUIRE(void) {
   if(iterFixed >= 10) {
     for(int i = 0; i<3; ++i) {
       setAllLedGreen();
-      delay(100);
+      delay(200);
       setLedOff();
-      delay(100);
+      delay(200);
     }
 
     current_state=STATE_POSITIONING;
   } else {
     for(int i = 0; i<3; ++i) {
       setAllLedOrange();
-      delay(100);
+      delay(200);
       setLedOff();
-      delay(100);
+      delay(200);
     }
 
     current_state=STATE_WAIT_AUTO;
