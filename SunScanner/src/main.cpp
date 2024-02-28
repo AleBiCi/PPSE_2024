@@ -165,10 +165,9 @@ void fn_ACTIONS(){
 
 void fn_POSITIONING(void){
   message.time.tm_isdst = false;
-  //compass.read();
   servo_controller.auto_positioning(&(message.time),message.latitude,message.longitude,400,compass.getAzimuth(),&az_val,&el_val);
-  
-  current_state = STATE_FINE_POINTING;
+  attesa_auto_pos=millis();
+  current_state = STATE_WAIT_AUTO;
   btn_pressed_id == 0;
 }
 
@@ -183,8 +182,6 @@ void fn_WAIT_AUTO(void){
   if(millis()-attesa_auto_pos > 180000){
     current_state = STATE_GPS_ACQUIRE;
   }
-  // Led di stato
-  // messaggio a schermo per esito acquisizione
   if(btn_pressed_id == 3){
     --menu_dept;
     current_state = STATE_ACTIONS;
@@ -312,8 +309,25 @@ void fn_GPS_ACQUIRE(void) {
   Serial.println();
 
   if(iterFixed >= 10) {
+    for(int i = 0; i<3; ++i) {
+      setAllLedGreen();
+      delay(100);
+      setLedOff();
+      delay(100);
+    }
+
     current_state=STATE_POSITIONING;
-  } else current_state=STATE_WAIT_AUTO;
+  } else {
+    for(int i = 0; i<3; ++i) {
+      setAllLedOrange();
+      delay(100);
+      setLedOff();
+      delay(100);
+    }
+
+    current_state=STATE_WAIT_AUTO;
+    attesa_auto_pos = millis();
+  }
 }
 
 void btn_up_pressed(void){
