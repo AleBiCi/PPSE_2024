@@ -79,12 +79,12 @@ void WaitMove() {
 void drawMenu1(int i) {
   //display.clearDisplay();
   switch (i) {
-    case 1:
+    /*case 1:
       drawMenuElement(4, 2, bitmap_history, home_menu_names[3]);
       disp.drawRect(1, 22, 126, 20, WHITE);
       drawMenuElement(4, 24, bitmap_specs, home_menu_names[0]);
       drawMenuElement(4, 48, bitmap_GPS, home_menu_names[1]);
-      break;
+      break;*/
 
     case 2:
       drawMenuElement(4, 2, bitmap_specs, home_menu_names[0]);
@@ -100,12 +100,12 @@ void drawMenu1(int i) {
       drawMenuElement(4, 48, bitmap_history, home_menu_names[3]);
       break;
 
-    case 4:
+    /*case 4:
       drawMenuElement(4, 2, bitmap_move, home_menu_names[2]);
       disp.drawRect(1, 22, 126, 20, WHITE);
       drawMenuElement(4, 24, bitmap_history, home_menu_names[3]);
       drawMenuElement(4, 48, bitmap_specs, home_menu_names[0]);
-      break;
+      break;*/
   }
 }
 
@@ -119,11 +119,11 @@ void drawMenu2(int i, int sel, int pin_v, float phi, float teta) {
 
   switch (i) {
     //specs
-    case 1:
+   /* case 1:
       
       dtostrf(Tensione(pin_v), 5, 2, tensione_string);
       drawMenuElement(4, 24, bitmap_icon_v, tensione_string);
-      break;
+      break;*/
 
     //GPS
     case 2:
@@ -166,14 +166,14 @@ void drawMenu2(int i, int sel, int pin_v, float phi, float teta) {
       break;
 
     //history
-    case 4:
+   /* case 4:
       
       //dtostrf(Tensione(pin_v), 5, 2, tensione_string);
       //drawMenuElement(4, 2, bitmap_max_irradiance, max_tension_string);
 
       //dtostrf(Tensione(pin_v), 5, 2, min_tension_string);
       //drawMenuElement(4, 24, bitmap_min_irradiance, min_tension_string);
-      break;
+      break;*/
   }
 }
 
@@ -235,12 +235,12 @@ void SelezioneMenu(int i, int j, int sel, int pin_v, float phi, float teta){
   }
 }
 
-int pacMan_1_n(int n, int val){
-  if(val<1){
+int pacMan_2_n(int n, int val){
+  if(val<2){
     val = n;
   }
   if(val>n){
-    val = 1;
+    val = 2;
   }
   return val;
 }
