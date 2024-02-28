@@ -87,7 +87,7 @@ void drawMenu1(int i) {
       break;*/
 
     case 2:
-      drawMenuElement(4, 2, bitmap_specs, home_menu_names[0]);
+      //drawMenuElement(4, 2, bitmap_specs, home_menu_names[0]);
       disp.drawRect(1, 22, 126, 20, WHITE);
       drawMenuElement(4, 24, bitmap_GPS, home_menu_names[1]);
       drawMenuElement(4, 48, bitmap_move, home_menu_names[2]);
@@ -97,7 +97,7 @@ void drawMenu1(int i) {
       drawMenuElement(4, 2, bitmap_GPS, home_menu_names[1]);
       disp.drawRect(1, 22, 126, 20, WHITE);
       drawMenuElement(4, 24, bitmap_move, home_menu_names[2]);
-      drawMenuElement(4, 48, bitmap_history, home_menu_names[3]);
+      //drawMenuElement(4, 48, bitmap_history, home_menu_names[3]);
       break;
 
     /*case 4:
