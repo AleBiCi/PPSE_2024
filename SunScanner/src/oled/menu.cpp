@@ -42,6 +42,8 @@ void setup_disp(){
     // Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
+  disp.clearDisplay();
+  disp.display();
 }
 
 void clear_disp(){
@@ -233,16 +235,6 @@ void SelezioneMenu(int i, int j, int sel, int pin_v, float phi, float teta){
     drawMenu3(sel);
     break;
   }
-}
-
-int pacMan_2_n(int n, int val){
-  if(val<2){
-    val = n;
-  }
-  if(val>n){
-    val = 2;
-  }
-  return val;
 }
 
 int menu_keep_range_1_3(int val){

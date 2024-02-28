@@ -100,14 +100,20 @@ bool parseRMC(std::string& line, MessageRMC& mess) {
 
     double degrees = floor(mess.latitude / 100.0);
     double minutes = mess.latitude - degrees * 100.0;
-    mess.latitude = degrees + minutes / 60.0;
+    //mess.latitude = degrees + minutes / 60.0;
+    
+    // For debugging purposes only
+    mess.latitude = 46.067065359752604;
 
     (!lat_dir_s.empty()) ? mess.lat_dir = lat_dir_s[0] : mess.lat_dir = ' ';
     
     if (!lon_s.empty()) mess.longitude = std::stod(lon_s);
     degrees = floor(mess.longitude / 100.0);
     minutes = mess.longitude - degrees * 100.0;
-    mess.longitude = degrees + minutes / 60.0;
+    // mess.longitude = degrees + minutes / 60.0;
+
+    // For debugging purposes only
+    mess.longitude = 11.149633295780877;
     
     (!lon_dir_s.empty()) ? mess.lon_dir = lon_dir_s[0] : mess.lon_dir = ' ';
     

@@ -68,7 +68,7 @@ int btn_pressed_id; //0->none 1->up 2->down 3->left 4->right
 
 int manual_control_mode=0; //0->az 1->el
 
-int menu_dept=1, menu_hight_1=1, menu_hight_2=1;
+int menu_dept=1, menu_hight_1=2, menu_hight_2=1;
 
 int attesa_auto_pos;
 
@@ -86,7 +86,7 @@ double el_val;
 
 void setupM8Q();
 
-int pacMan(int val, int range);
+int pacMan(int start ,int val, int range);
 
 StateMachine_t fsm[] = {
                       {STATE_IDLE, fn_IDLE},
@@ -173,6 +173,10 @@ void fn_ACTIONS(){
 void fn_POSITIONING(void){
   message.time.tm_isdst = false;
   servo_controller.auto_positioning(&(message.time),message.latitude,message.longitude,400,compass.getAzimuth(),&az_val,&el_val);
+  Serial.print("el: ");
+  Serial.println(el_val);
+  Serial.println(message.longitude);
+  Serial.println(message.latitude);
   attesa_auto_pos=millis();
   current_state = STATE_WAIT_AUTO;
   btn_pressed_id == 0;
@@ -191,6 +195,7 @@ void fn_WAIT_AUTO(void){
   }
   if(btn_pressed_id == 3){
     --menu_dept;
+    clear_disp();
     current_state = STATE_ACTIONS;
   }
   btn_pressed_id = 0;
@@ -201,6 +206,7 @@ void fn_ZENIT(void){
   servo_controller.servoEl.set_servo(90);
   current_state = STATE_ACTIONS;
   --menu_dept;
+  clear_disp();
   btn_pressed_id == 0;
 }
 
@@ -225,6 +231,7 @@ void fn_MANUAL(void){
     case 3/*LEFT*/:{
       /*NEED TO CHANGE MENU POS*/
       menu_dept--;
+      clear_disp();
       btn_pressed_id == 0;
       current_state = STATE_ACTIONS;
       break;
@@ -246,6 +253,7 @@ void fn_WAIT_BACK(void){
 
   if(btn_pressed_id == 3){
     menu_dept--;
+    clear_disp();
     btn_pressed_id == 0;
     current_state = STATE_ACTIONS;
   }
@@ -297,7 +305,7 @@ void fn_GPS_ACQUIRE(void) {
       }
     }
   }
-
+  
   Serial.print(message.latitude);
   Serial.println();
   Serial.print(message.longitude);
@@ -322,8 +330,8 @@ void fn_GPS_ACQUIRE(void) {
       setLedOff();
       delay(200);
     }
+  current_state=STATE_POSITIONING;
 
-    current_state=STATE_POSITIONING;
   } else {
     for(int i = 0; i<3; ++i) {
       setAllLedOrange();
@@ -331,7 +339,6 @@ void fn_GPS_ACQUIRE(void) {
       setLedOff();
       delay(200);
     }
-
     current_state=STATE_WAIT_AUTO;
     attesa_auto_pos = millis();
   }
@@ -385,8 +392,9 @@ void setup() {
   pinMode(PIN_VOLTAGE,INPUT);
 
   setupM8Q();
-  delay(5000);
 
+  delay(5000);
+  SelezioneMenu(menu_hight_1,menu_dept,menu_hight_2,PIN_VOLTAGE,servo_controller.servoAz.get_alpha(),servo_controller.servoEl.get_alpha());
   current_state = STATE_ACTIONS;
 }
 
