@@ -112,22 +112,22 @@ void fn_ACTIONS(){
   switch(btn_pressed_id){
     case 1/*UP*/:{
       if(menu_dept == 1){
-        menu_hight_1=pacMan(--menu_hight_1,4);
+        menu_hight_1=pacMan(2,--menu_hight_1,3);
         clear_disp();
       }
       if(menu_dept == 2 && menu_hight_1 == 3){
-        menu_hight_2=pacMan(--menu_hight_2,3);
+        menu_hight_2=pacMan(1,--menu_hight_2,3);
         clear_disp();
       }
       break;
     }
     case 2/*DOWN*/:{
       if(menu_dept == 1){
-        menu_hight_1=pacMan(++menu_hight_1,4);
+        menu_hight_1=pacMan(2,++menu_hight_1,3);
         clear_disp();
       }
       if(menu_dept == 2 && menu_hight_1 == 3){
-        menu_hight_2=pacMan(++menu_hight_2,3);
+        menu_hight_2=pacMan(1,++menu_hight_2,3);
         clear_disp();
       }
       break;
@@ -449,8 +449,8 @@ void setupM8Q() {
 }
 
 
-int pacMan(int val, int range){
-  val = val>range ? 1 : val;
-  val = val<1 ? range : val;
+int pacMan(int start ,int val, int range){
+  val = val>range ? start : val;
+  val = val<start ? range : val;
   return val;
 }
