@@ -11,6 +11,8 @@ void setAllLedGreen();
 
 void setAllLedBlue();
 
+void setAllLedOrange();
+
 void setLedOff();
 
 void circleCompleteLoopLed();
