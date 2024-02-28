@@ -17,6 +17,11 @@ void setAllLedBlue(){
     p.neoPixelClear(true);
 }
 
+void setAllLedOrange(){
+    p.neoPixelFill(255,153,0,true);
+    p.neoPixelClear(true);
+}
+
 void setLedOff() {
     p.neoPixelClear(true);
 }
