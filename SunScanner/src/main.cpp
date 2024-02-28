@@ -113,24 +113,29 @@ void fn_ACTIONS(){
     case 1/*UP*/:{
       if(menu_dept == 1){
         menu_hight_1=pacMan(--menu_hight_1,4);
+        clear_disp();
       }
       if(menu_dept == 2 && menu_hight_1 == 3){
         menu_hight_2=pacMan(--menu_hight_2,3);
+        clear_disp();
       }
       break;
     }
     case 2/*DOWN*/:{
       if(menu_dept == 1){
         menu_hight_1=pacMan(++menu_hight_1,4);
+        clear_disp();
       }
       if(menu_dept == 2 && menu_hight_1 == 3){
         menu_hight_2=pacMan(++menu_hight_2,3);
+        clear_disp();
       }
       break;
     }
     case 3/*LEFT*/:{
       if(menu_dept == 2){
         --menu_dept;
+        clear_disp();
       }
       break;
     }
@@ -151,9 +156,11 @@ void fn_ACTIONS(){
           }
         }
         ++menu_dept;
+        clear_disp();
       }
       if(menu_dept == 1){
         ++menu_dept;
+        clear_disp();
       }
       break;
     }

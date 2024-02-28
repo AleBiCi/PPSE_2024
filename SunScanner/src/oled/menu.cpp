@@ -123,6 +123,7 @@ void drawMenu2(int i, int sel, int pin_v, float phi, float teta) {
       
       dtostrf(Tensione(pin_v), 5, 2, tensione_string);
       drawMenuElement(4, 24, bitmap_icon_v, tensione_string);
+      break;
 
     //GPS
     case 2:
@@ -177,9 +178,6 @@ void drawMenu2(int i, int sel, int pin_v, float phi, float teta) {
 }
 
 void drawMenu3(int i) {
-  disp.clearDisplay();
-  disp.display();
-
   switch (i) {
     case 1:
         //WaitMove();
@@ -219,12 +217,11 @@ void drawMenu3(int i) {
 
       break;
   }
+  disp.display();
 }
 
 
 void SelezioneMenu(int i, int j, int sel, int pin_v, float phi, float teta){
-  disp.clearDisplay();
-
   switch(j){
   case 1:
     drawMenu1(i);
