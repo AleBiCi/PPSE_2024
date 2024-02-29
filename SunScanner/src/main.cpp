@@ -1,9 +1,9 @@
-#include "servoLib/servo_control.h"
-#include "oled/menu.h"
-#include "gps/NMEAParser.h"
-#include "led/led.h"
+#include "servoLib/servo_control.h" //Libreria servo
+#include "oled/menu.h"  //Libreria display
+#include "gps/NMEAParser.h"  //Libreria set-up e parsing gps
+#include "led/led.h"  //Libreria per controllo LED
 #include <Arduino.h>
-#include <QMC5883LCompass.h>
+#include <QMC5883LCompass.h>  //Libreria controllo bussola
 #include <string>
 // #include <Adafruit_NeoPixel.h>
 #include <NeoPixelConnect.h>
@@ -26,8 +26,8 @@
 #define CHUNK_SIZE 8
 #define BUFFER_SIZE 256
 
+// Stati della MSF che controlla il flow di esecuzione
 typedef enum {
-    STATE_IDLE,
     STATE_ACTIONS,
     STATE_POSITIONING,
     STATE_FINE_POINTING,
@@ -38,17 +38,21 @@ typedef enum {
     STATE_GPS_ACQUIRE
 }State_t;
 
+/* Tipo che rappresenta uno stato:                                            */
+/* state => nome stato                                                        */
+/* state_function => puntatore a funzione, cio che viene eseguito nello stato */
 typedef struct{
     State_t state;
     void (*state_function)(void);
 } StateMachine_t;
 
+/* Funzioni che catturano la pressione di un pulsante */
 void btn_up_pressed(void);
 void btn_down_pressed(void);
 void btn_left_pressed(void);
 void btn_right_pressed(void);
 
-void fn_IDLE(void);
+/* Funzioni di ogni stato */
 void fn_ACTIONS(void);
 void fn_POSITIONING(void);
 void fn_FINE_POINTING(void);
@@ -58,56 +62,51 @@ void fn_MANUAL(void);
 void fn_WAIT_BACK(void);
 void fn_GPS_ACQUIRE(void);
 
-State_t current_state = STATE_IDLE;
+State_t current_state = STATE_ACTIONS; //stato di partenza
 
-QMC5883LCompass compass;
+QMC5883LCompass compass;  // variabile per controllo la bussola
 
-ServoController servo_controller(PIN_SERVO_AZ,PIN_SERVO_EL,PIN_VOLTAGE,PIN_VOLTAGE);
+ServoController servo_controller(PIN_SERVO_AZ,PIN_SERVO_EL,PIN_VOLTAGE,PIN_VOLTAGE); //variabile per controllo servo
 
-int btn_pressed_id; //0->none 1->up 2->down 3->left 4->right
+int btn_pressed_id; //variabile per identificare il bottone premuto, 0->none 1->up 2->down 3->left 4->right
 
-int manual_control_mode=0; //0->az 1->el
+int manual_control_mode=0; //variabile per identificare il servo da muovere in modalità manuale, 0->az 1->el
 
+/* menu_dept: spostamenti a dx e sx nel menu               */
+/* menu_hight_1: spostamenti su e giu nella prima pagina   */
+/* menu_hight_2: spostamenti su e giu nella seconda pagina */
 int menu_dept=1, menu_hight_1=2, menu_hight_2=1;
 
-int attesa_auto_pos;
+long int attesa_auto_pos;  //variabile che tiene traccia del momento dell'ultimo posizionamento automatico
 
-char read_char;
+char read_char;  //variabile che tiene i caratteri letti dal gps
 
 // Buffer per il canale seriale UART (carattere, 8 bit)
 char buffer_uart1[BUFFER_SIZE] = "";
 
-MessageRMC message;
+MessageRMC message;  //variabile per lo store del parsing dei dati GPS
 
 std::string sent;
 
-double az_val;
-double el_val;
+double az_val;  //valore di azimuth del sole
+double el_val;  //valore di elevazione del sole
 
-void setupM8Q();
+void setupM8Q();  //funzione per inizializzare il gps
 
-int pacMan(int start ,int val, int range);
+int pacMan(int start ,int val, int range);  //funzione per mantenere in range menu_hight_1 e menu_hight_2
 
+/* creazione della macchina a stati */
 StateMachine_t fsm[] = {
-                      {STATE_IDLE, fn_IDLE},
                       {STATE_ACTIONS, fn_ACTIONS},
                       {STATE_POSITIONING, fn_POSITIONING},
                       {STATE_FINE_POINTING, fn_FINE_POINTING},
                       {STATE_WAIT_AUTO, fn_WAIT_AUTO},
                       {STATE_ZENIT, fn_ZENIT},
                       {STATE_MANUAL, fn_MANUAL},
-                      {STATE_WAIT_BACK, fn_WAIT_BACK},
                       {STATE_GPS_ACQUIRE, fn_GPS_ACQUIRE}
 };
 
-void fn_IDLE(){
-  if(btn_pressed_id!=0){
-    current_state = STATE_ACTIONS;
-  }
-  delay(100);
-  btn_pressed_id = 0;
-}
-
+/* stato che gestisce la pressione dei bottoni */
 void fn_ACTIONS(){
   switch(btn_pressed_id){
     case 1/*UP*/:{
@@ -170,30 +169,37 @@ void fn_ACTIONS(){
   delay(100);
 }
 
+/* funzione per il posizionamento automatico */
 void fn_POSITIONING(void){
-  message.time.tm_isdst = false;
+  compass.read();
   servo_controller.auto_positioning(&(message.time),message.latitude,message.longitude,400,compass.getAzimuth(),&az_val,&el_val);
+ 
+  /* messaggi seriali di debug */
   Serial.print("el: ");
   Serial.println(el_val);
   Serial.println(message.longitude);
   Serial.println(message.latitude);
-  attesa_auto_pos=millis();
-  current_state = STATE_WAIT_AUTO;
+    
+  current_state = STATE_FINE_POINTING;
   btn_pressed_id == 0;
 }
 
+/* stato per aggiustare la posizione dei servo utilizzando la tensione letta */
 void fn_FINE_POINTING(void){
-  servo_controller.max_power_pos(2,5);
-  attesa_auto_pos=millis();
+  servo_controller.max_power_pos(2,5);  //vengono eseguiti 5 step da 2 gradi per ogni direzione
+  attesa_auto_pos=millis();  //viene salvato il tempo dell'ultimo posizionamento
   current_state = STATE_WAIT_AUTO;
   btn_pressed_id == 0;
 }
 
+/* stato che attende o il superamento dell'intervallo di tempo per poter rieseguire il */
+/* posizionamento automatico o la pressione del bottone sinistro per uscire dalla      */
+/* modalità automatica                                                                 */
 void fn_WAIT_AUTO(void){
-  if(millis()-attesa_auto_pos > 180000){
+  if(millis()-attesa_auto_pos > 180000){ // passati 3 minuti
     current_state = STATE_GPS_ACQUIRE;
   }
-  if(btn_pressed_id == 3){
+  if(btn_pressed_id == 3){ //pressione tasto sinistro
     --menu_dept;
     clear_disp();
     current_state = STATE_ACTIONS;
@@ -202,6 +208,7 @@ void fn_WAIT_AUTO(void){
 
 }
 
+/* Il pannello viene posizionato verticalmente */
 void fn_ZENIT(void){
   servo_controller.servoEl.set_servo(90);
   current_state = STATE_ACTIONS;
@@ -210,9 +217,10 @@ void fn_ZENIT(void){
   btn_pressed_id == 0;
 }
 
+/* Funzione di controllo manuale */
 void fn_MANUAL(void){
   switch(btn_pressed_id){
-    case 1/*UP*/:{
+    case 1/*UP*/:{ //movimento di uno dei servo
       if(manual_control_mode==0){
         servo_controller.servoAz.set_servo(servo_controller.servoAz.get_alpha()+5);
       }else{
@@ -220,7 +228,7 @@ void fn_MANUAL(void){
       }
       break;
     }
-    case 2/*DOWN*/:{
+    case 2/*DOWN*/:{ //movimento di uno dei servo
       if(manual_control_mode==0){
         servo_controller.servoAz.set_servo(servo_controller.servoAz.get_alpha()-5);
       }else{
@@ -228,15 +236,14 @@ void fn_MANUAL(void){
       }
       break;
     }
-    case 3/*LEFT*/:{
-      /*NEED TO CHANGE MENU POS*/
+    case 3/*LEFT*/:{ //uscita dalla modalita manuale
       menu_dept--;
       clear_disp();
       btn_pressed_id == 0;
       current_state = STATE_ACTIONS;
       break;
     }
-    case 4/*RIGHT*/:{
+    case 4/*RIGHT*/:{ //cambio del servo pilotato
       if(manual_control_mode==0){
         manual_control_mode = 1;
       }else{
@@ -248,19 +255,7 @@ void fn_MANUAL(void){
   btn_pressed_id = 0;
 }
 
-
-void fn_WAIT_BACK(void){
-
-  if(btn_pressed_id == 3){
-    menu_dept--;
-    clear_disp();
-    btn_pressed_id == 0;
-    current_state = STATE_ACTIONS;
-  }
-  btn_pressed_id == 0;
-  delay(100);
-}
-
+/* stato per l'acquisizione e il parsing dei dati gps */
 void fn_GPS_ACQUIRE(void) {
   int iterNotFixed = 0;
   int iterFixed = 0;
@@ -286,6 +281,7 @@ void fn_GPS_ACQUIRE(void) {
           if (parseRMC(sent, message))
           { // GPS non fixato
             singleLedIfFixed(false, totIter);
+            /* Messaggi per debug */
             Serial.print(sent.data());
             Serial.println("ITER");
             Serial.println(iterNotFixed);
@@ -294,6 +290,7 @@ void fn_GPS_ACQUIRE(void) {
           else
           { // GPS fixato
             singleLedIfFixed(true, totIter);
+            /* Messaggi per debug */
             Serial.print(sent.data());
             Serial.println("ITER FIXED");
             Serial.println(iterFixed);
@@ -305,7 +302,8 @@ void fn_GPS_ACQUIRE(void) {
       }
     }
   }
-  
+
+  /* Messaggi per debug */
   Serial.print(message.latitude);
   Serial.println();
   Serial.print(message.longitude);
@@ -323,7 +321,7 @@ void fn_GPS_ACQUIRE(void) {
   Serial.print(message.time.tm_year);
   Serial.println();
 
-  if(iterFixed >= 10) {
+  if(iterFixed >= 10) {  //ricevuti almeno 10 messaggi validi
     for(int i = 0; i<3; ++i) {
       setAllLedGreen();
       delay(200);
@@ -359,50 +357,63 @@ void btn_right_pressed(void){
 
 
 void setup() {
-  // put your setup code here, to run once:
+  /* setup pin buck 12V->5V */
   pinMode(BUCK_EN, OUTPUT);
   digitalWrite(BUCK_EN, HIGH);
 
-  Serial.begin(9600);
+  Serial.begin(9600);  //boud rate seriale
 
+  /* setup pin I2C */
   Wire.setSDA(0);
   Wire.setSCL(1);
 
   setup_disp();
 
+  /* Setup gps */
   // Setta i pin 5 e 4 come ricevitore e trasmettitore per UART1 (Possibile che siano già settati di default)
   // Uso Serial2, vedi pinout Raspberry Pi Pico e specifiche seriali della libreria Arduino-pico
   Serial2.setRX(UART1_RX);
   Serial2.setTX(UART1_TX);
-
   Serial2.begin(UART_BAUDRATE); // UART0 su PICO (RP2040)
-  
   pinMode(GPS_nEN, OUTPUT);
   digitalWrite(GPS_nEN, LOW); // GPS EN e' attivo basso
+  setupM8Q();
+  delay(5000);
 
+  /*setup pulsanti*/
   pinMode(BTN_UP,INPUT_PULLUP);
   pinMode(BTN_DOWN,INPUT_PULLUP);
   pinMode(BTN_LEFT,INPUT_PULLUP);
   pinMode(BTN_RIGHT,INPUT_PULLUP);
+
+  /* funzioni per attivare attivare gli interrupt sui pin dei pulsanti */
   attachInterrupt(digitalPinToInterrupt(BTN_UP), btn_up_pressed, FALLING );
   attachInterrupt(digitalPinToInterrupt(BTN_DOWN), btn_down_pressed, FALLING );
   attachInterrupt(digitalPinToInterrupt(BTN_LEFT), btn_left_pressed, FALLING );
   attachInterrupt(digitalPinToInterrupt(BTN_RIGHT), btn_right_pressed, FALLING );
 
-  pinMode(PIN_VOLTAGE,INPUT);
+  pinMode(PIN_VOLTAGE,INPUT); //pin di ingresso della tensione del pannellino solare
 
-  setupM8Q();
+  compass.init(); //Inizializzazione bussola
 
-  delay(5000);
+  /* Primo display del menu */
   SelezioneMenu(menu_hight_1,menu_dept,menu_hight_2,PIN_VOLTAGE,servo_controller.servoAz.get_alpha(),servo_controller.servoEl.get_alpha());
+
+  /* Impostazione dello stato di partenza */
   current_state = STATE_ACTIONS;
 }
 
 void loop() {
-  fsm[current_state].state_function();
+  /* viene eseguita la funzione corrispondente al current state */
+  fsm[current_state].state_function(); 
+
+  /* aggiornamento del menu */
   SelezioneMenu(menu_hight_1,menu_dept,menu_hight_2,PIN_VOLTAGE,servo_controller.servoAz.get_alpha(),servo_controller.servoEl.get_alpha());
 }
 
+/* Operazioni per inizializzare il gps:                         */
+/*                                                              */
+/*                                                              */
 void setupM8Q() {
   byte UBX_CFG_MSG_GGA_OFF[] = {// UBX-CFG-MSG NMEA-GGA Off on All interfaces
             0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
