@@ -2,7 +2,6 @@
 #include <string.h>
 #include <sstream> // for stringstream
 #include <time.h>
-#include <iostream>
 #include "gps/NMEAParser.h"
 #include <math.h>
 
@@ -92,59 +91,71 @@ bool parseRMC(std::string& line, MessageRMC& mess) {
         error = true; // if checksum comparison and validity status check didn't give positive result, return false
     } else return false;
 
-    // Cast and Assign values to class attributes
+    // CAST AND ASSIGN VALUES TO EACH FIELD
+    
+    // ID
     mess.message_ID = ID_s.data();
 
-
+    // Latitude
     if (!lat_s.empty()) mess.latitude = std::stod(lat_s);
 
+        // Converting acquired DMM (Degrees, Decimal Minutes) latitude into DD (Decimal Degrees) 
     double degrees = floor(mess.latitude / 100.0);
     double minutes = mess.latitude - degrees * 100.0;
-    //mess.latitude = degrees + minutes / 60.0;
+    mess.latitude = degrees + minutes / 60.0;
     
     // For debugging purposes only
-    mess.latitude = 46.067065359752604;
+    // mess.latitude = 46.067065359752604; 
 
+    // Lat_dir (N,S)
     (!lat_dir_s.empty()) ? mess.lat_dir = lat_dir_s[0] : mess.lat_dir = ' ';
     
+    // Longitude
     if (!lon_s.empty()) mess.longitude = std::stod(lon_s);
+        // Converting acquired DMM (Degrees, Decimal Minutes) latitude into DD (Decimal Degrees)
     degrees = floor(mess.longitude / 100.0);
     minutes = mess.longitude - degrees * 100.0;
-    // mess.longitude = degrees + minutes / 60.0;
+    mess.longitude = degrees + minutes / 60.0;
 
     // For debugging purposes only
     mess.longitude = 11.149633295780877;
     
+    // Lon_dir (E,W)
     (!lon_dir_s.empty()) ? mess.lon_dir = lon_dir_s[0] : mess.lon_dir = ' ';
     
+    // Time
     if(!time_s.empty()) {
+            // Hours
         std::string hour;
         hour.push_back(time_s[0]); hour.push_back(time_s[1]);
         mess.time.tm_hour = std::stoi(hour, nullptr, 10);
-
+            // Minutes
         std::string minutes;
         minutes.push_back(time_s[2]); minutes.push_back(time_s[3]);
         mess.time.tm_min = std::stoi(minutes, nullptr, 10);
-
+            // Seconds
         std::string seconds;
         seconds.push_back(time_s[4]); seconds.push_back(time_s[5]);
         mess.time.tm_sec = std::stoi(seconds, nullptr, 10);
     }
 
+    // Date
     if(!date_s.empty()) {
-        std::string month;
-        month.push_back(date_s[2]); month.push_back(date_s[3]);
-        mess.time.tm_mon = std::stoi(month, nullptr, 10) - 1;
-
+            // Day
         std::string day;
         day.push_back(date_s[0]); day.push_back(date_s[1]);
         mess.time.tm_mday = std::stoi(day, nullptr, 10);
-
+            // Month
+        std::string month;
+        month.push_back(date_s[2]); month.push_back(date_s[3]);
+        mess.time.tm_mon = std::stoi(month, nullptr, 10) - 1; // month is acquired as [1-12] but should be [0-11]
+            // Year
         std::string year;
         year.push_back(date_s[4]); year.push_back(date_s[5]);
         mess.time.tm_year = std::stoi(year, nullptr, 10) + 100;
     }
     
+    // Mode
     (!mode_s.empty()) ? mess.mode = mode_s[0] : mess.mode = ' ';
 
     return (error);

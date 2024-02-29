@@ -17,14 +17,39 @@
 #define PIN_SERVO_EL 8
 
 #define PIN_VOLTAGE 29
-#define BUCK_EN 11 // Pin da pullappare per attivare il circuito di alimentazione 12V->5V 
 
 #define UART1_RX 5
 #define UART1_TX 4
 #define GPS_nEN 18  // Attenzione: GPS_EN è negato ==> attivo basso
 #define UART_BAUDRATE 9600 // Baud rate per comunicazione UART con GPS
 #define CHUNK_SIZE 8
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 80 // Dimensione massima del buffer UART, corrisponde a massima lunghezza di una frase NMEA
+
+// Messaggi per la configurazione del SAM-M8Q
+uint8_t UBX_CFG_MSG_GGA_OFF[] = {                   // UBX-CFG-MSG NMEA-GGA Off on All interfaces
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,             // Header
+    0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
+    0xFF, 0x23};                                    // Checksum
+
+uint8_t UBX_CFG_MSG_GSV_OFF[] = {                   // UBX-CFG-MSG NMEA-GSV Off on All interfaces
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
+    0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x02, 0x38};  
+                                  
+uint8_t UBX_CFG_MSG_GSA_OFF[] = {                   // UBX-CFG-MSG NMEA-GSA Off on All interfaces
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
+    0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    0x01, 0x31};                                    
+
+uint8_t UBX_CFG_MSG_VTG_OFF[] = {                   // UBX-CFG-MSG NMEA-VTG Off on All interfaces
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
+    0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    0x04, 0x46};
+                                    
+uint8_t UBX_CFG_MSG_GLL_OFF[] = {                   // UBX-CFG-MSG NMEA-GLL Off on All interfaces
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
+    0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    0x00, 0x2A};                                    
 
 // Stati della MSF che controlla il flow di esecuzione
 typedef enum {
@@ -64,7 +89,7 @@ void fn_GPS_ACQUIRE(void);
 
 State_t current_state = STATE_ACTIONS; //stato di partenza
 
-QMC5883LCompass compass;  // variabile per controllo la bussola
+QMC5883LCompass compass;  // variabile per controllo della bussola
 
 ServoController servo_controller(PIN_SERVO_AZ,PIN_SERVO_EL,PIN_VOLTAGE,PIN_VOLTAGE); //variabile per controllo servo
 
@@ -81,7 +106,7 @@ long int attesa_auto_pos;  //variabile che tiene traccia del momento dell'ultimo
 
 char read_char;  //variabile che tiene i caratteri letti dal gps
 
-// Buffer per il canale seriale UART (carattere, 8 bit)
+// Buffer per il canale seriale UART (8 bit)
 char buffer_uart1[BUFFER_SIZE] = "";
 
 MessageRMC message;  //variabile per lo store del parsing dei dati GPS
@@ -263,37 +288,39 @@ void fn_GPS_ACQUIRE(void) {
   int ledIter = 0;
   bool flag = false;
 
-  while(iterFixed < 10 && iterNotFixed < 20) {
+  while(iterFixed < 10 && iterNotFixed < 20) { // Il ciclo di acquisizione prosegue finché non sono stati ricevuti 10 messaggi fixed o 20 non fixed
     if (Serial2.available())
     {
       read_char = Serial2.read();
-      strncat(buffer_uart1, &read_char, 1);
-      if (read_char == '\n')
+      strncat(buffer_uart1, &read_char, 1); // Legge un carattere alla volta dalla seriale e lo inserisce nel buffer_uart1
+      if (read_char == '\n') // Se il carattere ricevuto è il terminatore ho acquisito una sentence intera
       {
         if (!flag)
-        { // Ignora il contenuto del primo buffer, in quanto può contenere messaggi GNTXT che romperebbero parseRMC
+        { // Ignora il contenuto del primo buffer -> potrebbe contenere messaggi GNTXT che romperebbero parseRMC
           flag = true;
-          strcpy(buffer_uart1, "");
+          strcpy(buffer_uart1, ""); // Svuota buffer
         }
         else
         {
-          sent.assign(buffer_uart1, strlen(buffer_uart1));          
+          sent.assign(buffer_uart1, strlen(buffer_uart1)); // Popolo la stringa sent
           if (parseRMC(sent, message))
           { // GPS non fixato
-            singleLedIfFixed(false, totIter);
+            singleLedIfFixed(false, totIter); // Un led alla volta lampeggia di arancione
             /* Messaggi per debug */
             Serial.print(sent.data());
             Serial.println("ITER");
             Serial.println(iterNotFixed);
+
             iterNotFixed++;
           }
           else
           { // GPS fixato
-            singleLedIfFixed(true, totIter);
+            singleLedIfFixed(true, totIter); // Un led alla volta lampeggia di verde
             /* Messaggi per debug */
             Serial.print(sent.data());
             Serial.println("ITER FIXED");
             Serial.println(iterFixed);
+
             iterFixed++;
           }
           totIter++;
@@ -321,24 +348,30 @@ void fn_GPS_ACQUIRE(void) {
   Serial.print(message.time.tm_year);
   Serial.println();
 
-  if(iterFixed >= 10) {  //ricevuti almeno 10 messaggi validi
-    for(int i = 0; i<3; ++i) {
+  if (iterFixed >= 10)
+  { // Ricevuti almeno 10 messaggi validi
+    for (int i = 0; i < 3; ++i)
+    {
+      // Tutti i led lampeggiano tre volte di verde
       setAllLedGreen();
       delay(200);
       setLedOff();
       delay(200);
     }
-  current_state=STATE_POSITIONING;
-
-  } else {
-    for(int i = 0; i<3; ++i) {
+    current_state = STATE_POSITIONING; // Ho acquisito dati buoni, quindi passo al posizionamento dei motori
+  }
+  else
+  {
+    for (int i = 0; i < 3; ++i)
+    {
+      // Tutti i led lampeggiano tre volte di arancione
       setAllLedOrange();
       delay(200);
       setLedOff();
       delay(200);
     }
-    current_state=STATE_WAIT_AUTO;
     attesa_auto_pos = millis();
+    current_state = STATE_WAIT_AUTO; // Torno ad aspettare per un intervallo di tempo prefissato prima di riposizionare
   }
 }
 
@@ -357,11 +390,8 @@ void btn_right_pressed(void){
 
 
 void setup() {
-  /* setup pin buck 12V->5V */
-  pinMode(BUCK_EN, OUTPUT);
-  digitalWrite(BUCK_EN, HIGH);
-
-  Serial.begin(9600);  //boud rate seriale
+  // Apertura seriale virtuale (USB) a 9600 baud
+  Serial.begin(9600);
 
   /* setup pin I2C */
   Wire.setSDA(0);
@@ -375,8 +405,10 @@ void setup() {
   Serial2.setRX(UART1_RX);
   Serial2.setTX(UART1_TX);
   Serial2.begin(UART_BAUDRATE); // UART0 su PICO (RP2040)
+  
+  // Setup del ricevitore GNSS
   pinMode(GPS_nEN, OUTPUT);
-  digitalWrite(GPS_nEN, LOW); // GPS EN e' attivo basso
+  digitalWrite(GPS_nEN, LOW); // GPS_EN e' attivo basso
   setupM8Q();
   delay(5000);
 
@@ -411,59 +443,45 @@ void loop() {
   SelezioneMenu(menu_hight_1,menu_dept,menu_hight_2,PIN_VOLTAGE,servo_controller.servoAz.get_alpha(),servo_controller.servoEl.get_alpha());
 }
 
-/* Operazioni per inizializzare il gps:                         */
-/*                                                              */
-/*                                                              */
+/*
+Invio i messaggi di setup definiti in precedenze al ricevitore GNSS per sospendere la ricezione di tutti i messaggi ad eccezione dei GNRMC
+ATTENZIONE: è fondamentale aspettare almeno 1000ms tra un invio e l'altro (come da HW Integration Manual) per assicurare
+            la corretta ricezione dei messaggi
+*/
 void setupM8Q() {
-  byte UBX_CFG_MSG_GGA_OFF[] = {// UBX-CFG-MSG NMEA-GGA Off on All interfaces
-            0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
-            0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
-            0xFF, 0x23}; // Checksum
-  byte UBX_CFG_MSG_GSV_OFF[] = {// UBX-CFG-MSG NMEA-GSV Off on All interfaces
-            0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
-            0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
-            0x02, 0x38}; // Checksum
-  byte UBX_CFG_MSG_GSA_OFF[] = {// UBX-CFG-MSG NMEA-GSA Off on All interfaces
-            0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
-            0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
-            0x01, 0x31}; // Checksum
-  byte UBX_CFG_MSG_VTG_OFF[] = {// UBX-CFG-MSG NMEA-VTG Off on All interfaces
-            0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
-            0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
-            0x04, 0x46}; // Checksum
-  byte UBX_CFG_MSG_GLL_OFF[] = {// UBX-CFG-MSG NMEA-GLL Off on All interfaces
-            0xB5, 0x62, 0x06, 0x01, 0x08, 0x00,
-            0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Payload
-            0x00, 0x2A}; // Checksum
-
   delay(2000);
   for(size_t i = 0; i < sizeof(UBX_CFG_MSG_GGA_OFF); ++i) {
     Serial2.write(UBX_CFG_MSG_GGA_OFF[i]);
   }
+  // Debug
   Serial.println("Fatto GGA");
   delay(1000);
 
   for(size_t i = 0; i < sizeof(UBX_CFG_MSG_GSV_OFF); ++i) {
     Serial2.write(UBX_CFG_MSG_GSV_OFF[i]);
   }
+  // Debug
   Serial.println("Fatto GSV");
   delay(1000);
 
   for(size_t i = 0; i < sizeof(UBX_CFG_MSG_GSA_OFF); ++i) {
     Serial2.write(UBX_CFG_MSG_GSA_OFF[i]);
   }
+  // Debug
   Serial.println("Fatto GSA");
   delay(1000);
 
   for (size_t i = 0; i < sizeof(UBX_CFG_MSG_VTG_OFF); ++i) {
     Serial2.write(UBX_CFG_MSG_VTG_OFF[i]);
   }
+  // Debug
   Serial.println("Fatto VTG");
   delay(1000);
 
   for (size_t i = 0; i < sizeof(UBX_CFG_MSG_GLL_OFF); ++i) {
     Serial2.write(UBX_CFG_MSG_GLL_OFF[i]);
   }
+  // Debug
   Serial.println("Fatto GLL");
 }
 
