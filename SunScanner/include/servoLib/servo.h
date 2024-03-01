@@ -9,7 +9,7 @@
 class Servo{
 private:
 	double alpha, max_alpha; //variables that rapresent servo angle
-	int duty_alpha; //corresponding duty cycles, depends on resolution
+	int duty_alpha; //t_on of the control signal
 	int pin;
 public:
 	Servo(int max_ag, int p);
@@ -18,10 +18,10 @@ public:
 	double get_alpha();
 	int get_duty_alpha();
 	
-	/* Calculate duty cycle given an angle and pwm resolution */
+	/* Calculate duty cycle given an angle */
 	int duty_calc(double angle);
 	
-	/* put the anggle back in range (0 - 360) */
+	/* put the angle back in range (0 - 360) */
 	double rebound(int angle);
 	
 	/* Calculate how many saconds take for the rotation */
